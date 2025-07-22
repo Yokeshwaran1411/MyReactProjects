@@ -12,7 +12,6 @@ const LoginPage = () => {
   const [isDataSubmitted, setIsDataSubmitted] = useState(false);
 
   const { login, authUser } = useContext(AuthContext);
-  console.log("authUser:", authUser);
   const navigate = useNavigate();
 
   useEffect(() => {
