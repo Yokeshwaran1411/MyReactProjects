@@ -14,11 +14,11 @@ export const signup = async (req, res) => {
       return res.json({ success: false, message: "Account already exists" });
     }
     const salt = await bcrypt.genSalt(10);
-    const hasedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = await User.create({
       fullName,
       email,
-      password: hasedPassword,
+      password: hashedPassword,
       bio
     });
 

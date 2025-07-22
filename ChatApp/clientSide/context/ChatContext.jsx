@@ -25,17 +25,17 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  //function to get messages for a selected user
   const getMessages = async (userId) => {
+    if (!userId) {
+      console.warn("⚠️ getMessages called with undefined userId");
+      return;
+    }
+
     try {
       const { data } = await axios.get(`/api/messages/${userId}`);
       if (data.success) {
         setMessages(data.messages);
-
-        // Mark messages as seen on server
         await axios.put(`/api/messages/mark/${userId}`);
-
-        // Clear unseen message count locally
         setUnseenMessages((prev) => {
           const updated = { ...prev };
           delete updated[userId];
@@ -49,33 +49,12 @@ export const ChatProvider = ({ children }) => {
 
   //function to send message to selected user
   const sendMessage = async (messageData) => {
-    // console.log('messageData',messageData);
-    // if (!selectedUser || !selectedUser._id) {
-    //   toast.error("No user selected");
-    //   return;
-    // }
-
-    // try {
-    //   const { data } = await axios.post(
-    //     `/api/messages/send/${selectedUser._id}`,
-    //     messageData
-    //   );
-    //   if (data.success) {
-    //     setMessages((prevMessages) => [...prevMessages, data.newMessage]);
-    //   } else {
-    //     toast.error(data.message);
-    //   }
-    // } catch (error) {
-    //   toast.error(error.message);
-    // }
     try {
       const { data } = await axios.post(
         `/api/messages/send/${selectedUser._id}`,
         messageData
       );
-      if (data.success) {
-        setMessages((prevMessages) => [...prevMessages, data.newMessage]);
-      } else {
+      if (! data.success) {
         toast.error(data.message);
       }
     } catch (error) {
@@ -86,21 +65,34 @@ export const ChatProvider = ({ children }) => {
   //function to subscribe to messages for selected user
   const subscribeToMessages = async () => {
     if (!socket) return;
+  
     socket.on("newMessage", (newMessage) => {
-      if (selectedUser && newMessage.senderId === selectedUser._id) {
-        newMessage.seen = true;
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-        axios.put(`/api/messages/mark/${newMessage._id}`); // correct
+      console.log("🟩 Incoming socket message:", newMessage);
+    
+      if (
+        selectedUser &&
+        selectedUser._id &&
+        (newMessage.senderId === selectedUser._id ||
+          newMessage.reciverId === selectedUser._id)
+      ) {
+        setMessages((prev) => {
+          const exists = prev.some((msg) => msg._id === newMessage._id);
+          if (!exists) return [...prev, newMessage];
+          return prev;
+        });
+    
+        axios.put(`/api/messages/mark/${newMessage._id}`);
       } else {
         setUnseenMessages((prev) => ({
           ...prev,
           [newMessage.senderId]: prev[newMessage.senderId]
             ? prev[newMessage.senderId] + 1
-            : 1
+            : 1,
         }));
       }
-    });
+    });    
   };
+  
 
   //function to  unsubscribe from messages
   const unsubscribeFromMessages = () => {
@@ -124,6 +116,7 @@ export const ChatProvider = ({ children }) => {
     setSelectedUser,
     setUnseenMessages
   };
+
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 };

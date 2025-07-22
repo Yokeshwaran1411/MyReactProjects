@@ -80,9 +80,9 @@ export const AuthProvider = ({ children }) => {
     });
     newSocket.connect();
     setSocket(newSocket);
-    newSocket.on("getOnlineUsers", (userIds) => {
+    newSocket.on("online-users", (userIds) => {
       setOnlineUsers(userIds);
-    });
+    });    
   };
 
   useEffect(() => {
